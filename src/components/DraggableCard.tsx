@@ -18,7 +18,7 @@ export interface LinkData {
 }
 
 export interface CardData {
-  id: string;
+  id: number;
   x: number;
   y: number;
   width: number;
@@ -58,12 +58,12 @@ export function normalizeUrl(url: string): string {
 type Props = {
   card: CardData;
   onUpdate: (card: CardData, persist: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   onCopy: (card: CardData) => void;
   bringToFront: () => number;
   onLinkMove: (
-    sourceCardId: string,
-    targetCardId: string,
+    sourceCardId: number,
+    targetCardId: number,
     link: LinkData,
     targetIndex: number
   ) => void;
@@ -219,7 +219,7 @@ export default function DraggableCard({
     e.stopPropagation();
     try {
       const payload = JSON.parse(e.dataTransfer.getData(LINK_DRAG_TYPE)) as {
-        sourceCardId: string;
+        sourceCardId: number;
         link: LinkData;
       };
       onLinkMove(payload.sourceCardId, card.id, payload.link, targetIndex);

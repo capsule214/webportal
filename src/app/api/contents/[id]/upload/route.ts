@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
+import path from "path";
+import { mkdir, writeFile } from "fs/promises";
 import sharp from "sharp";
-import { Image, ensureSync } from "@/lib/db";
+import {
+  Portal,
+  Content,
+  ContentDetail,
+  CONTENT_TYPE,
+  ensureSync,
+} from "@/lib/db";
+import { getUserNo } from "@/lib/session";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -14,22 +23,41 @@ const MAX_IMAGE_COUNT = 50;
 const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1080;
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  ctx: RouteContext<"/api/contents/[id]/upload">
+) {
   await ensureSync();
+  const { id } = await ctx.params;
+  const userNo = await getUserNo(req);
+  if (!userNo) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const content = await Content.findOne({
+    where: { id, deleted: false, typeId: CONTENT_TYPE.IMAGE },
+    include: [
+      { model: Portal, where: { userNo, deleted: false }, required: true },
+    ],
+  });
+  if (!content) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const formData = await req.formData();
   const file = formData.get("file");
-  const id = formData.get("id");
-
-  if (!(file instanceof File) || typeof id !== "string" || !id) {
+  if (!(file instanceof File)) {
     return NextResponse.json(
-      { error: "ファイルとIDを指定してください" },
+      { error: "ファイルを指定してください" },
       { status: 400 }
     );
   }
 
   const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  if (!ALLOWED_MIME_TYPES.includes(file.type) || !ALLOWED_EXTENSIONS.includes(ext)) {
+  if (
+    !ALLOWED_MIME_TYPES.includes(file.type) ||
+    !ALLOWED_EXTENSIONS.includes(ext)
+  ) {
     return NextResponse.json(
       { error: "対応していない画像形式です" },
       { status: 400 }
@@ -43,7 +71,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const count = await Image.count();
+  const count = await Content.count({
+    where: { typeId: CONTENT_TYPE.IMAGE, deleted: false },
+  });
   if (count > MAX_IMAGE_COUNT) {
     return NextResponse.json(
       { error: "画像の登録上限に達しました" },
@@ -69,11 +99,14 @@ export async function POST(req: Request) {
     }
   }
 
-  const url = `/api/images/${id}/file`;
-  await Image.update(
-    { mimeType: file.type, data, url },
-    { where: { id } }
-  );
+  const fileName = `${content.id}_${Date.now()}${ext}`;
+  const uploadDir = path.join(process.cwd(), "uploads");
+  await mkdir(uploadDir, { recursive: true });
+  await writeFile(path.join(uploadDir, fileName), data);
 
-  return NextResponse.json({ url });
+  // 詳細行をファイル名で置き換える
+  await ContentDetail.destroy({ where: { contentsId: content.id } });
+  await ContentDetail.create({ contentsId: content.id, contents: fileName });
+
+  return NextResponse.json({ url: `/api/uploads/${fileName}` });
 }

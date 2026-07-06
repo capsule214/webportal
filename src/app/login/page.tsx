@@ -27,7 +27,7 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
-        router.push("/memo");
+        router.push("/portals");
         return;
       }
       setError(true);

@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 export interface VideoData {
-  id: string;
+  id: number;
   x: number;
   y: number;
   width: number;
@@ -44,7 +44,7 @@ export function extractYouTubeId(url: string): string | null {
 type Props = {
   video: VideoData;
   onUpdate: (video: VideoData, persist: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   bringToFront: () => number;
 };
 

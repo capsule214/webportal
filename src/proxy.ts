@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifySessionToken } from "@/lib/session";
 
-export default function proxy(request: NextRequest) {
-  const session = request.cookies.get("session");
-  const authenticated =
-    !!session && !!process.env.SESSION_SECRET && session.value === process.env.SESSION_SECRET;
+export default async function proxy(request: NextRequest) {
+  const token = request.cookies.get("session")?.value;
+  const userNo = await verifySessionToken(token);
 
-  if (authenticated) {
+  if (userNo) {
     return NextResponse.next();
   }
 
@@ -21,10 +21,10 @@ export default function proxy(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // /memo 配下はログイン画面へリダイレクト
+  // 画面はログイン画面へリダイレクト
   return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {
-  matcher: ["/memo/:path*", "/api/:path*"],
+  matcher: ["/memo/:path*", "/portals/:path*", "/api/:path*"],
 };

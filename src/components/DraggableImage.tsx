@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PhotoIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export interface ImageData {
-  id: string;
+  id: number;
   x: number;
   y: number;
   width: number;
@@ -21,8 +21,8 @@ const snap = (value: number) => Math.round(value / GRID) * GRID;
 type Props = {
   image: ImageData;
   onUpdate: (image: ImageData, persist: boolean) => void;
-  onDelete: (id: string) => void;
-  onUpload: (id: string, file: File) => void;
+  onDelete: (id: number) => void;
+  onUpload: (id: number, file: File) => void;
   bringToFront: () => number;
 };
 

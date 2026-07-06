@@ -26,3 +26,6 @@ next-env.d.ts
 
 # local database
 memo.db
+
+# uploaded images
+/uploads

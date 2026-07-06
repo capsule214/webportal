@@ -11,7 +11,7 @@ import { TrashIcon } from "@heroicons/react/24/outline";
 import { LINK_DRAG_TYPE } from "./DraggableCard";
 
 export interface RichTextData {
-  id: string;
+  id: number;
   x: number;
   y: number;
   width: number;
@@ -32,7 +32,7 @@ const snap = (value: number) => Math.round(value / GRID) * GRID;
 type Props = {
   note: RichTextData;
   onUpdate: (note: RichTextData, persist: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   bringToFront: () => number;
 };
 

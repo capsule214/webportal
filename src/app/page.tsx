@@ -28,8 +28,8 @@ export default function Home() {
       >
         リンクメモ・画像・リッチテキストを自由に配置できるメモボードです。
       </Typography>
-      <Button component={Link} href="/memo" variant="contained" size="large">
-        メモボードを開く
+      <Button component={Link} href="/portals" variant="contained" size="large">
+        メモボード一覧を開く
       </Button>
     </Box>
   );

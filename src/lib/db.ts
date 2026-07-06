@@ -7,161 +7,105 @@ const sequelize = new Sequelize({
   logging: false,
 });
 
-export class Card extends Model {
-  declare id: string;
-  declare x: number;
-  declare y: number;
-  declare width: number;
-  declare height: number;
-  declare title: string;
-  declare titleColor: string;
-  declare zIndex: number;
-  declare links?: Link[];
+// メモボードの一覧情報
+export class Portal extends Model {
+  declare id: number;
+  declare name: string;
+  declare deleted: boolean;
+  declare userNo: string;
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
-Card.init(
+Portal.init(
   {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    x: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 200 },
-    height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 140 },
-    title: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
-    titleColor: {
-      type: DataTypes.STRING,
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    name: { type: DataTypes.TEXT, allowNull: false, defaultValue: "" },
+    deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    userNo: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: "user_no",
+    },
+  },
+  {
+    sequelize,
+    tableName: "portals",
+    timestamps: true,
+    underscored: true, // createdAt/updatedAt を created_at/updated_at 列に対応させる
+  }
+);
+
+// メモボード内の要素の種類と表示座標位置管理
+// type_id 1:URLリンク 2:画像 3:動画 4:リッチテキストノート
+export const CONTENT_TYPE = {
+  LINK_CARD: 1,
+  IMAGE: 2,
+  VIDEO: 3,
+  RICH_TEXT: 4,
+} as const;
+
+export class Content extends Model {
+  declare id: number;
+  declare portalId: number;
+  declare contentName: string;
+  declare typeId: number;
+  declare deleted: boolean;
+  declare x: number;
+  declare y: number;
+  declare w: number;
+  declare h: number;
+  declare details?: ContentDetail[];
+}
+
+Content.init(
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    portalId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "portal_id",
+    },
+    contentName: {
+      type: DataTypes.TEXT,
       allowNull: false,
       defaultValue: "",
-      field: "title_color",
+      field: "content_name",
     },
-    zIndex: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 1,
-      field: "z_index",
-    },
-  },
-  { sequelize, tableName: "cards", timestamps: false }
-);
-
-export class Link extends Model {
-  declare id: string;
-  declare cardId: string;
-  declare title: string;
-  declare url: string;
-  declare sortOrder: number;
-}
-
-Link.init(
-  {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    cardId: { type: DataTypes.STRING, allowNull: false, field: "card_id" },
-    title: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
-    url: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
-    sortOrder: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-      field: "sort_order",
-    },
-  },
-  { sequelize, tableName: "links", timestamps: false }
-);
-
-Card.hasMany(Link, { foreignKey: "cardId", as: "links" });
-Link.belongsTo(Card, { foreignKey: "cardId" });
-
-export class Image extends Model {
-  declare id: string;
-  declare x: number;
-  declare y: number;
-  declare width: number;
-  declare height: number;
-  declare zIndex: number;
-  declare url: string;
-  declare mimeType: string;
-  declare data: Buffer | null;
-}
-
-Image.init(
-  {
-    id: { type: DataTypes.STRING, primaryKey: true },
+    typeId: { type: DataTypes.INTEGER, allowNull: false, field: "type_id" },
+    deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     x: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
     y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 80 },
-    height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 80 },
-    zIndex: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 1,
-      field: "z_index",
-    },
-    url: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
-    mimeType: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: "",
-      field: "mime_type",
-    },
-    data: { type: DataTypes.BLOB, allowNull: true },
+    w: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 200 },
+    h: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 140 },
   },
-  { sequelize, tableName: "images", timestamps: false }
+  { sequelize, tableName: "contents", timestamps: false }
 );
 
-export class RichText extends Model {
-  declare id: string;
-  declare x: number;
-  declare y: number;
-  declare width: number;
-  declare height: number;
-  declare zIndex: number;
-  declare content: string;
+// メモボードの1コンテンツに含まれる詳細情報（URLアドレスや画像ファイル名など）
+export class ContentDetail extends Model {
+  declare id: number;
+  declare contentsId: number;
+  declare contents: string;
 }
 
-RichText.init(
+ContentDetail.init(
   {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    x: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 260 },
-    height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 180 },
-    zIndex: {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    contentsId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 1,
-      field: "z_index",
+      field: "contents_id",
     },
-    content: { type: DataTypes.TEXT, allowNull: false, defaultValue: "" },
+    contents: { type: DataTypes.TEXT, allowNull: false, defaultValue: "" },
   },
-  { sequelize, tableName: "rich_texts", timestamps: false }
+  { sequelize, tableName: "contentdetails", timestamps: false }
 );
 
-export class Video extends Model {
-  declare id: string;
-  declare x: number;
-  declare y: number;
-  declare width: number;
-  declare height: number;
-  declare zIndex: number;
-  declare url: string;
-}
-
-Video.init(
-  {
-    id: { type: DataTypes.STRING, primaryKey: true },
-    x: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
-    width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 320 },
-    height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 180 },
-    zIndex: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 1,
-      field: "z_index",
-    },
-    url: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
-  },
-  { sequelize, tableName: "videos", timestamps: false }
-);
+Portal.hasMany(Content, { foreignKey: "portalId", as: "contents" });
+Content.belongsTo(Portal, { foreignKey: "portalId" });
+Content.hasMany(ContentDetail, { foreignKey: "contentsId", as: "details" });
+ContentDetail.belongsTo(Content, { foreignKey: "contentsId" });
 
 declare global {
   var _seqSynced: Promise<unknown> | undefined;
