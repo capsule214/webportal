@@ -15,6 +15,7 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import PostAddIcon from "@mui/icons-material/PostAdd";
+import VideoCallIcon from "@mui/icons-material/VideoCall";
 import { useColorMode } from "@/components/AppThemeProvider";
 import Toast from "@/components/Toast";
 import DraggableCard, {
@@ -25,6 +26,7 @@ import DraggableImage, { type ImageData } from "@/components/DraggableImage";
 import DraggableRichText, {
   type RichTextData,
 } from "@/components/DraggableRichText";
+import DraggableVideo, { type VideoData } from "@/components/DraggableVideo";
 
 export default function MemoPage() {
   const router = useRouter();
@@ -32,12 +34,14 @@ export default function MemoPage() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [images, setImages] = useState<ImageData[]>([]);
   const [notes, setNotes] = useState<RichTextData[]>([]);
+  const [videos, setVideos] = useState<VideoData[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const zCounter = useRef(1);
 
   const cardsRef = useRef(cards);
   const imagesRef = useRef(images);
   const notesRef = useRef(notes);
+  const videosRef = useRef(videos);
 
   useEffect(() => {
     cardsRef.current = cards;
@@ -48,6 +52,9 @@ export default function MemoPage() {
   useEffect(() => {
     notesRef.current = notes;
   }, [notes]);
+  useEffect(() => {
+    videosRef.current = videos;
+  }, [videos]);
 
   const bringToFront = useCallback(() => ++zCounter.current, []);
 
@@ -55,28 +62,33 @@ export default function MemoPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [cardsRes, imagesRes, notesRes] = await Promise.all([
+        const [cardsRes, imagesRes, notesRes, videosRes] = await Promise.all([
           fetch("/api/cards"),
           fetch("/api/images"),
           fetch("/api/rich-texts"),
+          fetch("/api/videos"),
         ]);
-        if (!cardsRes.ok || !imagesRes.ok || !notesRes.ok) {
+        if (!cardsRes.ok || !imagesRes.ok || !notesRes.ok || !videosRes.ok) {
           throw new Error("load failed");
         }
-        const [cardsData, imagesData, notesData] = (await Promise.all([
-          cardsRes.json(),
-          imagesRes.json(),
-          notesRes.json(),
-        ])) as [CardData[], ImageData[], RichTextData[]];
+        const [cardsData, imagesData, notesData, videosData] =
+          (await Promise.all([
+            cardsRes.json(),
+            imagesRes.json(),
+            notesRes.json(),
+            videosRes.json(),
+          ])) as [CardData[], ImageData[], RichTextData[], VideoData[]];
 
         setCards(cardsData);
         setImages(imagesData);
         setNotes(notesData);
+        setVideos(videosData);
         zCounter.current = Math.max(
           1,
           ...cardsData.map((c) => c.zIndex),
           ...imagesData.map((i) => i.zIndex),
-          ...notesData.map((n) => n.zIndex)
+          ...notesData.map((n) => n.zIndex),
+          ...videosData.map((v) => v.zIndex)
         );
       } catch {
         setToast("データの読み込みに失敗しました");
@@ -197,6 +209,8 @@ export default function MemoPage() {
           ? Math.max(0, targetIndex - 1)
           : Math.min(targetIndex, links.length);
       links.splice(insertAt, 0, link);
+      // 順序が変わらない場合は何もしない
+      if (links.every((l, i) => l.id === source.links[i]?.id)) return;
       nextSource = nextTarget = { ...source, links };
     } else {
       nextSource = {
@@ -315,6 +329,63 @@ export default function MemoPage() {
     }
   };
 
+  // ---- 動画 ----
+
+  const addVideo = async () => {
+    const video: VideoData = {
+      id: crypto.randomUUID(),
+      x: 100 + (videosRef.current.length % 5) * 30,
+      y: 100 + (videosRef.current.length % 5) * 30,
+      width: 320,
+      height: 200,
+      zIndex: bringToFront(),
+      url: "",
+    };
+    setVideos((prev) => [...prev, video]);
+    try {
+      const res = await fetch("/api/videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(video),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setVideos((prev) => prev.filter((v) => v.id !== video.id));
+      setToast("動画の追加に失敗しました");
+    }
+  };
+
+  const updateVideo = async (next: VideoData, persist: boolean) => {
+    const prev = videosRef.current.find((v) => v.id === next.id);
+    setVideos((list) => list.map((v) => (v.id === next.id ? next : v)));
+    if (!persist) return;
+    try {
+      const res = await fetch(`/api/videos/${next.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      if (prev) {
+        setVideos((list) => list.map((v) => (v.id === next.id ? prev : v)));
+      }
+      setToast("動画の更新に失敗しました");
+    }
+  };
+
+  const deleteVideo = async (id: string) => {
+    const prev = videosRef.current;
+    setVideos((list) => list.filter((v) => v.id !== id));
+    try {
+      const res = await fetch(`/api/videos/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setVideos(prev);
+      setToast("動画の削除に失敗しました");
+    }
+  };
+
   // ---- リッチテキスト ----
 
   const addNote = async () => {
@@ -399,6 +470,11 @@ export default function MemoPage() {
               <PostAddIcon />
             </IconButton>
           </Tooltip>
+          <Tooltip title="動画を追加">
+            <IconButton onClick={addVideo} size="small">
+              <VideoCallIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={mode === "light" ? "ダークモード" : "ライトモード"}>
             <IconButton onClick={toggle} size="small">
               {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
@@ -441,6 +517,15 @@ export default function MemoPage() {
               note={note}
               onUpdate={updateNote}
               onDelete={deleteNote}
+              bringToFront={bringToFront}
+            />
+          ))}
+          {videos.map((video) => (
+            <DraggableVideo
+              key={video.id}
+              video={video}
+              onUpdate={updateVideo}
+              onDelete={deleteVideo}
               bringToFront={bringToFront}
             />
           ))}

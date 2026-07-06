@@ -40,6 +40,7 @@ http://localhost:3000 を開き、「メモボードを開く」→ ログイン
 
 - **メモカード**: リンク集をカードで管理。ドラッグ移動・リサイズ（10pxグリッドスナップ）、タイトルのインライン編集、タイトル色パレット、カード複製、削除確認モーダル。リンクはカード内・カード間でドラッグ＆ドロップ移動可能。
 - **画像**: プレースホルダーに画像ファイルをドロップまたはクリックで選択してアップロード。JPEG/PNG/WebP/GIF、最大20MB、最大50枚。1920x1080を超える画像はSharpで自動リサイズ（GIFは無加工）。画像はSQLiteにBLOBとして保存。
+- **動画**: YouTubeのURL（`watch` / `youtu.be` / `shorts` / `embed` 形式に対応）を登録するとサムネイルを表示。クリックで埋め込みプレーヤー（youtube-nocookie.com）によるインライン再生、停止でサムネイルに戻ります。ホバーでURL変更・削除が可能。
 - **リッチテキストノート**: TipTapによる書式付きメモ。見出し・リスト・配置・文字色・文字サイズ・ハイライト・表などに対応。編集は600msデバウンスで自動保存。
 - **認証**: `src/proxy.ts` が `/memo` と `/api/*`（認証系を除く）をセッションCookieでガード。
 - ボード操作は楽観的更新で、API失敗時はロールバックしてトーストを表示。
@@ -52,13 +53,14 @@ src/
 │   ├── page.tsx              # トップページ
 │   ├── login/page.tsx        # ログイン
 │   ├── memo/page.tsx         # メモボード
-│   └── api/                  # Route Handlers（auth / cards / images / rich-texts）
+│   └── api/                  # Route Handlers（auth / cards / images / rich-texts / videos）
 ├── components/
 │   ├── AppThemeProvider.tsx  # MUIテーマ + ライト/ダーク切替
 │   ├── Toast.tsx             # エラートースト
 │   ├── DraggableCard.tsx     # リンクメモカード
 │   ├── DraggableImage.tsx    # 画像
-│   └── DraggableRichText.tsx # リッチテキストノート
-├── lib/db.ts                 # Sequelizeモデル（cards / links / images / rich_texts）
+│   ├── DraggableRichText.tsx # リッチテキストノート
+│   └── DraggableVideo.tsx    # YouTube動画
+├── lib/db.ts                 # Sequelizeモデル（cards / links / images / rich_texts / videos）
 └── proxy.ts                  # 認証ガード（Next.js 16 Proxy）
 ```

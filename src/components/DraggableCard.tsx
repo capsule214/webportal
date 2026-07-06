@@ -83,6 +83,7 @@ export default function DraggableCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addingLink, setAddingLink] = useState(false);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [linkTitleDraft, setLinkTitleDraft] = useState("");
   const [linkUrlDraft, setLinkUrlDraft] = useState("");
   const cardRef = useRef(card);
@@ -205,7 +206,14 @@ export default function DraggableCard({
     );
   };
 
+  // 行の上半分なら手前、下半分なら直後に挿入する
+  const rowInsertIndex = (e: React.DragEvent, index: number) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2 ? index : index + 1;
+  };
+
   const handleLinkDrop = (e: React.DragEvent, targetIndex: number) => {
+    setDropIndex(null);
     if (!e.dataTransfer.types.includes(LINK_DRAG_TYPE)) return;
     e.preventDefault();
     e.stopPropagation();
@@ -220,10 +228,25 @@ export default function DraggableCard({
     }
   };
 
-  const allowLinkDrop = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes(LINK_DRAG_TYPE)) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
+  const handleRowDragOver = (e: React.DragEvent, index: number) => {
+    if (!e.dataTransfer.types.includes(LINK_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDropIndex(rowInsertIndex(e, index));
+  };
+
+  const handleListDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(LINK_DRAG_TYPE)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropIndex(card.links.length);
+  };
+
+  const handleListDragLeave = (e: React.DragEvent) => {
+    // リスト内の子要素間の移動では消さない
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropIndex(null);
     }
   };
 
@@ -327,11 +350,13 @@ export default function DraggableCard({
       <div
         data-nodrag
         className="flex-1 overflow-y-auto p-1.5"
-        onDragOver={allowLinkDrop}
+        onDragOver={handleListDragOver}
+        onDragLeave={handleListDragLeave}
         onDrop={(e) => handleLinkDrop(e, card.links.length)}
       >
         {card.links.map((link, index) => (
           <div key={link.id}>
+            {dropIndex === index && <DropIndicator />}
             {editingLinkId === link.id ? (
               <LinkForm
                 title={linkTitleDraft}
@@ -352,8 +377,9 @@ export default function DraggableCard({
                   );
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                onDragOver={allowLinkDrop}
-                onDrop={(e) => handleLinkDrop(e, index)}
+                onDragEnd={() => setDropIndex(null)}
+                onDragOver={(e) => handleRowDragOver(e, index)}
+                onDrop={(e) => handleLinkDrop(e, rowInsertIndex(e, index))}
               >
                 <a
                   href={link.url}
@@ -384,6 +410,8 @@ export default function DraggableCard({
             )}
           </div>
         ))}
+
+        {dropIndex === card.links.length && <DropIndicator />}
 
         {addingLink ? (
           <LinkForm
@@ -455,6 +483,10 @@ export default function DraggableCard({
       )}
     </div>
   );
+}
+
+function DropIndicator() {
+  return <div className="my-0.5 h-0.5 rounded bg-blue-500" />;
 }
 
 function LinkForm({

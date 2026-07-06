@@ -135,6 +135,34 @@ RichText.init(
   { sequelize, tableName: "rich_texts", timestamps: false }
 );
 
+export class Video extends Model {
+  declare id: string;
+  declare x: number;
+  declare y: number;
+  declare width: number;
+  declare height: number;
+  declare zIndex: number;
+  declare url: string;
+}
+
+Video.init(
+  {
+    id: { type: DataTypes.STRING, primaryKey: true },
+    x: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
+    y: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
+    width: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 320 },
+    height: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 180 },
+    zIndex: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      field: "z_index",
+    },
+    url: { type: DataTypes.STRING, allowNull: false, defaultValue: "" },
+  },
+  { sequelize, tableName: "videos", timestamps: false }
+);
+
 declare global {
   var _seqSynced: Promise<unknown> | undefined;
 }
