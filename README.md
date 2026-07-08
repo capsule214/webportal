@@ -47,6 +47,10 @@ npm run lint   # ESLint
 | メモボード一覧 | `/portals` | ボードの作成・削除（論理削除）・選択。設定ドロワーで名前・公開範囲・編集権を変更 |
 | メモボード | `/memo/[id]` | ボード上でカード・画像・動画・ノートを自由配置 |
 
+画面幅が768px未満（iPhoneなどのモバイル端末）でメモボードを開くと、
+閲覧専用の縦並びビューに切り替わります。全アイテムがz-index順に
+画面幅いっぱいで縦に並び、リンクのタップ・動画の再生は可能ですが編集はできません。
+
 ## データ仕様
 
 - `portals` — メモボードの一覧情報（id, name, deleted, user_no, visibility, shared_with, edit_scope, created_at, updated_at）

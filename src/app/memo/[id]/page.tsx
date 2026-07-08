@@ -9,6 +9,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -28,6 +29,7 @@ import DraggableRichText, {
   type RichTextData,
 } from "@/components/DraggableRichText";
 import DraggableVideo, { type VideoData } from "@/components/DraggableVideo";
+import MobileBoardView from "@/components/MobileBoardView";
 
 // URLリンクカードの詳細行（contentdetails）を組み立てる
 const cardDetails = (card: CardData) => [
@@ -51,6 +53,8 @@ export default function MemoBoardPage() {
   const params = useParams<{ id: string }>();
   const portalId = params.id;
   const { mode, toggle } = useColorMode();
+  // iPhoneなどの狭い画面では閲覧専用の縦並びビューにする
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [portalName, setPortalName] = useState("");
   const [canEdit, setCanEdit] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -510,10 +514,10 @@ export default function MemoBoardPage() {
           <Typography variant="h6" sx={{ flexGrow: 1, ml: 1 }}>
             {portalName || "メモボード"}
           </Typography>
-          {!canEdit && (
+          {(!canEdit || isMobile) && (
             <Chip size="small" label="閲覧のみ" color="warning" sx={{ mr: 1 }} />
           )}
-          {canEdit && (
+          {canEdit && !isMobile && (
             <>
               <Tooltip title="ノートを追加">
                 <IconButton onClick={addNote} size="small">
@@ -551,6 +555,14 @@ export default function MemoBoardPage() {
       </AppBar>
 
       <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+        {isMobile ? (
+          <MobileBoardView
+            cards={cards}
+            images={images}
+            videos={videos}
+            notes={notes}
+          />
+        ) : (
         <Box sx={{ position: "relative", width: 3000, height: 2000 }}>
           {cards.map((card) => (
             <DraggableCard
@@ -592,6 +604,7 @@ export default function MemoBoardPage() {
             />
           ))}
         </Box>
+        )}
       </Box>
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
