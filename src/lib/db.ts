@@ -8,11 +8,16 @@ const sequelize = new Sequelize({
 });
 
 // メモボードの一覧情報
+// visibility: private=非公開 / shared=指定ユーザーに公開 / public=全ユーザーに公開
+// editScope: owner=所有者のみ編集可 / members=公開先のユーザーも編集可
 export class Portal extends Model {
   declare id: number;
   declare name: string;
   declare deleted: boolean;
   declare userNo: string;
+  declare visibility: string;
+  declare sharedWith: string;
+  declare editScope: string;
   declare createdAt: Date;
   declare updatedAt: Date;
 }
@@ -26,6 +31,23 @@ Portal.init(
       type: DataTypes.TEXT,
       allowNull: false,
       field: "user_no",
+    },
+    visibility: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "private",
+    },
+    sharedWith: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+      field: "shared_with",
+    },
+    editScope: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "owner",
+      field: "edit_scope",
     },
   },
   {
@@ -111,9 +133,37 @@ declare global {
   var _seqSynced: Promise<unknown> | undefined;
 }
 
+// sync()は既存テーブルに列を追加しないため、後から増えた列は個別に補う
+async function syncSchema() {
+  await sequelize.sync();
+  const qi = sequelize.getQueryInterface();
+  const table = await qi.describeTable("portals");
+  if (!("visibility" in table)) {
+    await qi.addColumn("portals", "visibility", {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "private",
+    });
+  }
+  if (!("shared_with" in table)) {
+    await qi.addColumn("portals", "shared_with", {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+    });
+  }
+  if (!("edit_scope" in table)) {
+    await qi.addColumn("portals", "edit_scope", {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "owner",
+    });
+  }
+}
+
 export async function ensureSync() {
   if (!global._seqSynced) {
-    global._seqSynced = sequelize.sync();
+    global._seqSynced = syncSchema();
   }
   await global._seqSynced;
 }

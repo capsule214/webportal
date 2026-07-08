@@ -8,6 +8,7 @@ import {
   StopCircleIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
+import { GripDots } from "./DraggableCard";
 
 export interface VideoData {
   id: number;
@@ -146,7 +147,7 @@ export default function DraggableVideo({
 
   return (
     <div
-      className="group absolute overflow-hidden rounded-lg border border-gray-300 bg-black shadow-md dark:border-gray-600"
+      className="absolute flex flex-col overflow-hidden rounded-lg border border-gray-300 bg-black shadow-md dark:border-gray-600"
       style={{
         left: video.x,
         top: video.y,
@@ -156,56 +157,89 @@ export default function DraggableVideo({
       }}
       onPointerDown={startDrag}
     >
-      {showForm ? (
-        /* URL登録フォーム */
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white p-3 dark:bg-gray-800">
-          <VideoCameraIcon className="h-8 w-8 text-gray-400" />
-          <input
-            data-nodrag
-            className="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-            placeholder="YouTubeのURLを貼り付け"
-            value={urlDraft}
-            onChange={(e) => setUrlDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && commitUrl()}
-          />
-          {urlError && (
-            <p className="text-xs text-red-500">
-              YouTubeのURLを認識できませんでした
-            </p>
-          )}
-          <div className="flex gap-2">
-            {editing && videoId && (
-              <button
-                type="button"
-                data-nodrag
-                className="rounded px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-                onClick={() => setEditing(false)}
-              >
-                キャンセル
-              </button>
-            )}
-            <button
-              type="button"
-              data-nodrag
-              className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
-              onClick={commitUrl}
-            >
-              登録
-            </button>
-          </div>
+      {/* ヘッダー（ドラッグハンドル） */}
+      <div
+        className="flex cursor-grab select-none items-center gap-1.5 bg-gray-800 px-2 py-1 text-white active:cursor-grabbing"
+        title="ドラッグで移動"
+      >
+        <GripDots />
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+          動画
+        </span>
+        {playing && !showForm && (
           <button
             type="button"
             data-nodrag
-            className="absolute right-1 top-1 hidden rounded bg-black/50 p-1 text-white hover:bg-red-600 group-hover:block"
-            onClick={() => onDelete(video.id)}
-            title="削除"
+            className="rounded p-0.5 hover:bg-white/20"
+            onClick={() => setPlaying(false)}
+            title="再生を終了"
           >
-            <TrashIcon className="h-4 w-4" />
+            <StopCircleIcon className="h-4 w-4" />
           </button>
-        </div>
-      ) : playing ? (
-        /* 再生中 */
-        <>
+        )}
+        {!showForm && !playing && videoId && (
+          <button
+            type="button"
+            data-nodrag
+            className="rounded p-0.5 hover:bg-white/20"
+            onClick={startEdit}
+            title="URLを変更"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </button>
+        )}
+        <button
+          type="button"
+          data-nodrag
+          className="rounded p-0.5 hover:bg-red-600"
+          onClick={() => onDelete(video.id)}
+          title="削除"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="relative min-h-0 flex-1">
+        {showForm ? (
+          /* URL登録フォーム */
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white p-3 dark:bg-gray-800">
+            <VideoCameraIcon className="h-8 w-8 text-gray-400" />
+            <input
+              data-nodrag
+              className="w-full rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              placeholder="YouTubeのURLを貼り付け"
+              value={urlDraft}
+              onChange={(e) => setUrlDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && commitUrl()}
+            />
+            {urlError && (
+              <p className="text-xs text-red-500">
+                YouTubeのURLを認識できませんでした
+              </p>
+            )}
+            <div className="flex gap-2">
+              {editing && videoId && (
+                <button
+                  type="button"
+                  data-nodrag
+                  className="rounded px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  onClick={() => setEditing(false)}
+                >
+                  キャンセル
+                </button>
+              )}
+              <button
+                type="button"
+                data-nodrag
+                className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
+                onClick={commitUrl}
+              >
+                登録
+              </button>
+            </div>
+          </div>
+        ) : playing ? (
+          /* 再生中 */
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
             className={`h-full w-full ${dragging ? "pointer-events-none" : ""}`}
@@ -213,57 +247,28 @@ export default function DraggableVideo({
             allowFullScreen
             title="YouTube動画"
           />
-          <button
-            type="button"
-            data-nodrag
-            className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white hover:bg-black/80"
-            onClick={() => setPlaying(false)}
-            title="再生を終了"
-          >
-            <StopCircleIcon className="h-5 w-5" />
-          </button>
-        </>
-      ) : (
-        /* サムネイル表示 */
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-            alt="動画のサムネイル"
-            className="h-full w-full object-cover"
-            draggable={false}
-          />
-          <button
-            type="button"
-            data-nodrag
-            className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-90 transition hover:bg-black/40"
-            onClick={() => setPlaying(true)}
-            title="動画を再生"
-          >
-            <PlayCircleIcon className="h-16 w-16 text-white drop-shadow" />
-          </button>
-          <div className="absolute right-1 top-1 hidden gap-1 group-hover:flex">
+        ) : (
+          /* サムネイル表示 */
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              alt="動画のサムネイル"
+              className="h-full w-full object-cover"
+              draggable={false}
+            />
             <button
               type="button"
               data-nodrag
-              className="rounded bg-black/50 p-1 text-white hover:bg-black/80"
-              onClick={startEdit}
-              title="URLを変更"
+              className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-90 transition hover:bg-black/40"
+              onClick={() => setPlaying(true)}
+              title="動画を再生"
             >
-              <PencilIcon className="h-4 w-4" />
+              <PlayCircleIcon className="h-16 w-16 text-white drop-shadow" />
             </button>
-            <button
-              type="button"
-              data-nodrag
-              className="rounded bg-black/50 p-1 text-white hover:bg-red-600"
-              onClick={() => onDelete(video.id)}
-              title="削除"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
 
       {/* リサイズハンドル */}
       <div

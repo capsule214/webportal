@@ -8,6 +8,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -51,6 +52,7 @@ export default function MemoBoardPage() {
   const portalId = params.id;
   const { mode, toggle } = useColorMode();
   const [portalName, setPortalName] = useState("");
+  const [canEdit, setCanEdit] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [cards, setCards] = useState<CardData[]>([]);
   const [images, setImages] = useState<ImageData[]>([]);
@@ -87,12 +89,14 @@ export default function MemoBoardPage() {
         if (!res.ok) throw new Error();
         const data = (await res.json()) as {
           portal: { id: number; name: string };
+          canEdit: boolean;
           cards: CardData[];
           images: ImageData[];
           videos: VideoData[];
           richTexts: RichTextData[];
         };
         setPortalName(data.portal.name);
+        setCanEdit(data.canEdit);
         setCards(data.cards);
         setImages(data.images);
         setVideos(data.videos);
@@ -506,26 +510,33 @@ export default function MemoBoardPage() {
           <Typography variant="h6" sx={{ flexGrow: 1, ml: 1 }}>
             {portalName || "メモボード"}
           </Typography>
-          <Tooltip title="ノートを追加">
-            <IconButton onClick={addNote} size="small">
-              <NoteAddIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="画像を追加">
-            <IconButton onClick={addImage} size="small">
-              <AddPhotoAlternateIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="カードを追加">
-            <IconButton onClick={addCard} size="small">
-              <PostAddIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="動画を追加">
-            <IconButton onClick={addVideo} size="small">
-              <VideoCallIcon />
-            </IconButton>
-          </Tooltip>
+          {!canEdit && (
+            <Chip size="small" label="閲覧のみ" color="warning" sx={{ mr: 1 }} />
+          )}
+          {canEdit && (
+            <>
+              <Tooltip title="ノートを追加">
+                <IconButton onClick={addNote} size="small">
+                  <NoteAddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="画像を追加">
+                <IconButton onClick={addImage} size="small">
+                  <AddPhotoAlternateIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="カードを追加">
+                <IconButton onClick={addCard} size="small">
+                  <PostAddIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="動画を追加">
+                <IconButton onClick={addVideo} size="small">
+                  <VideoCallIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
           <Tooltip title={mode === "light" ? "ダークモード" : "ライトモード"}>
             <IconButton onClick={toggle} size="small">
               {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}

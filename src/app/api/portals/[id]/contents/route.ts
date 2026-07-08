@@ -7,6 +7,7 @@ import {
   ensureSync,
 } from "@/lib/db";
 import { getUserNo } from "@/lib/session";
+import { canEditPortal, canViewPortal } from "@/lib/access";
 
 // URLリンクカードの詳細行（meta行 + link行のJSON文字列）をパースする
 function parseCardDetails(details: ContentDetail[]) {
@@ -42,10 +43,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const portal = await Portal.findOne({
-    where: { id, userNo, deleted: false },
-  });
-  if (!portal) {
+  const portal = await Portal.findOne({ where: { id, deleted: false } });
+  if (!portal || !canViewPortal(portal, userNo)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -105,6 +104,7 @@ export async function GET(
 
   return NextResponse.json({
     portal: { id: portal.id, name: portal.name },
+    canEdit: canEditPortal(portal, userNo),
     cards,
     images,
     videos,
@@ -123,11 +123,12 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const portal = await Portal.findOne({
-    where: { id, userNo, deleted: false },
-  });
-  if (!portal) {
+  const portal = await Portal.findOne({ where: { id, deleted: false } });
+  if (!portal || !canViewPortal(portal, userNo)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (!canEditPortal(portal, userNo)) {
+    return NextResponse.json({ error: "編集権限がありません" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => ({}));

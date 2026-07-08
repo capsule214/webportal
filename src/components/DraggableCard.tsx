@@ -264,11 +264,13 @@ export default function DraggableCard({
       }}
       onPointerDown={startDrag}
     >
-      {/* ヘッダー */}
+      {/* ヘッダー（ドラッグハンドル） */}
       <div
-        className="flex items-center gap-1 px-2 py-1.5 text-white"
+        className="flex cursor-grab select-none items-center gap-1 px-2 py-1.5 text-white active:cursor-grabbing"
         style={{ backgroundColor: titleColor }}
+        title="ドラッグで移動"
       >
+        <GripDots />
         {editingTitle ? (
           <input
             data-nodrag
@@ -287,10 +289,9 @@ export default function DraggableCard({
           />
         ) : (
           <span
-            className="min-w-0 flex-1 cursor-text truncate text-sm font-semibold"
-            data-nodrag
+            className="min-w-0 flex-1 truncate text-sm font-semibold"
             onDoubleClick={startEditTitle}
-            title="ダブルクリックでタイトルを編集"
+            title="ドラッグで移動 / ダブルクリックでタイトルを編集"
           >
             {card.title || "無題のカード"}
           </span>
@@ -487,6 +488,25 @@ export default function DraggableCard({
 
 function DropIndicator() {
   return <div className="my-0.5 h-0.5 rounded bg-blue-500" />;
+}
+
+// ドラッグハンドルを示す6点グリップ
+export function GripDots() {
+  return (
+    <svg
+      width="10"
+      height="14"
+      viewBox="0 0 10 14"
+      className="shrink-0 opacity-70"
+      aria-hidden
+    >
+      {[2, 7, 12].map((cy) =>
+        [3, 7.5].map((cx) => (
+          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.3" fill="currentColor" />
+        ))
+      )}
+    </svg>
+  );
 }
 
 function LinkForm({

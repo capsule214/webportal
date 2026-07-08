@@ -7,17 +7,19 @@ import {
   sequelize,
 } from "@/lib/db";
 import { getUserNo } from "@/lib/session";
+import { canEditPortal } from "@/lib/access";
 
-// 所有ユーザーのコンテンツだけを取得する
-async function findOwnedContent(req: Request, id: string) {
+// 編集権限のあるユーザーのコンテンツだけを取得する
+async function findEditableContent(req: Request, id: string) {
   const userNo = await getUserNo(req);
   if (!userNo) return null;
-  return Content.findOne({
-    where: { id, deleted: false },
-    include: [
-      { model: Portal, where: { userNo, deleted: false }, required: true },
-    ],
+  const content = await Content.findOne({ where: { id, deleted: false } });
+  if (!content) return null;
+  const portal = await Portal.findOne({
+    where: { id: content.portalId, deleted: false },
   });
+  if (!portal || !canEditPortal(portal, userNo)) return null;
+  return content;
 }
 
 export async function PUT(
@@ -26,7 +28,7 @@ export async function PUT(
 ) {
   await ensureSync();
   const { id } = await ctx.params;
-  const content = await findOwnedContent(req, id);
+  const content = await findEditableContent(req, id);
   if (!content) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -75,7 +77,7 @@ export async function DELETE(
 ) {
   await ensureSync();
   const { id } = await ctx.params;
-  const content = await findOwnedContent(req, id);
+  const content = await findEditableContent(req, id);
   if (!content) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

@@ -8,7 +8,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle, Color, FontSize } from "@tiptap/extension-text-style";
 import { TableKit } from "@tiptap/extension-table";
 import { TrashIcon } from "@heroicons/react/24/outline";
-import { LINK_DRAG_TYPE } from "./DraggableCard";
+import { GripDots, LINK_DRAG_TYPE } from "./DraggableCard";
 
 export interface RichTextData {
   id: number;
@@ -155,8 +155,12 @@ export default function DraggableRichText({
       onDrop={blockLinkDrag}
     >
       {/* ヘッダー（ドラッグハンドル） */}
-      <div className="flex items-center justify-between bg-gray-200 px-2 py-1 dark:bg-gray-700">
-        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+      <div
+        className="flex cursor-grab select-none items-center gap-1.5 bg-gray-200 px-2 py-1 text-gray-600 active:cursor-grabbing dark:bg-gray-700 dark:text-gray-300"
+        title="ドラッグで移動"
+      >
+        <GripDots />
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
           ノート
         </span>
         <button

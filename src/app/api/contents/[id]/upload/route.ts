@@ -10,6 +10,7 @@ import {
   ensureSync,
 } from "@/lib/db";
 import { getUserNo } from "@/lib/session";
+import { canEditPortal } from "@/lib/access";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -36,11 +37,14 @@ export async function POST(
 
   const content = await Content.findOne({
     where: { id, deleted: false, typeId: CONTENT_TYPE.IMAGE },
-    include: [
-      { model: Portal, where: { userNo, deleted: false }, required: true },
-    ],
   });
   if (!content) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const portal = await Portal.findOne({
+    where: { id: content.portalId, deleted: false },
+  });
+  if (!portal || !canEditPortal(portal, userNo)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

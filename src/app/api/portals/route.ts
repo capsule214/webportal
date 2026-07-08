@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Portal, ensureSync } from "@/lib/db";
 import { getUserNo } from "@/lib/session";
+import { canEditPortal, canViewPortal, parseSharedWith } from "@/lib/access";
 
 export async function GET(req: Request) {
   await ensureSync();
@@ -9,18 +10,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // 自分のボードに加えて、共有・公開されているボードも一覧に含める
   const portals = await Portal.findAll({
-    where: { userNo, deleted: false },
+    where: { deleted: false },
     order: [["updatedAt", "DESC"]],
   });
 
   return NextResponse.json(
-    portals.map((portal) => ({
-      id: portal.id,
-      name: portal.name,
-      createdAt: portal.createdAt,
-      updatedAt: portal.updatedAt,
-    }))
+    portals
+      .filter((portal) => canViewPortal(portal, userNo))
+      .map((portal) => ({
+        id: portal.id,
+        name: portal.name,
+        createdAt: portal.createdAt,
+        updatedAt: portal.updatedAt,
+        ownerNo: portal.userNo,
+        isOwner: portal.userNo === userNo,
+        visibility: portal.visibility,
+        sharedWith: parseSharedWith(portal.sharedWith),
+        editScope: portal.editScope,
+        canEdit: canEditPortal(portal, userNo),
+      }))
   );
 }
 

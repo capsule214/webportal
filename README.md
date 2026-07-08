@@ -44,12 +44,15 @@ npm run lint   # ESLint
 | 画面 | パス | 内容 |
 | --- | --- | --- |
 | ログイン | `/login` | ユーザー名・パスワードでログイン |
-| メモボード一覧 | `/portals` | ボードの作成・名前変更・削除（論理削除）・選択 |
+| メモボード一覧 | `/portals` | ボードの作成・削除（論理削除）・選択。設定ドロワーで名前・公開範囲・編集権を変更 |
 | メモボード | `/memo/[id]` | ボード上でカード・画像・動画・ノートを自由配置 |
 
 ## データ仕様
 
-- `portals` — メモボードの一覧情報（id, name, deleted, user_no, created_at, updated_at）
+- `portals` — メモボードの一覧情報（id, name, deleted, user_no, visibility, shared_with, edit_scope, created_at, updated_at）
+  - visibility: `private`（非公開）/ `shared`（指定ユーザーに公開）/ `public`（全ユーザーに公開）
+  - shared_with: 公開先ユーザー番号のカンマ区切り（visibility=shared のとき有効）
+  - edit_scope: `owner`（所有者のみ編集可）/ `members`（公開先のユーザーも編集可）
 - `contents` — ボード内要素の種類と座標（id, portal_id, content_name, type_id, deleted, x, y, w, h）
   - type_id: 1=URLリンク / 2=画像 / 3=動画 / 4=リッチテキストノート
 - `contentdetails` — 1コンテンツの詳細情報（id, contents_id, contents）
@@ -70,6 +73,9 @@ npm run lint   # ESLint
 - `GET /api/uploads/[name]` — アップロード画像の配信
 
 すべての非認証APIと `/portals`・`/memo` 配下は `src/proxy.ts` が署名検証でガードします。
+さらに各APIでボードの公開範囲・編集権を検査します（設定変更・削除は所有者のみ、
+コンテンツの閲覧は公開範囲内のユーザー、編集は edit_scope に従う）。閲覧のみの
+ユーザーにはボード画面に「閲覧のみ」バッジが表示され、追加ボタンが隠れます。
 
 ## 主な機能
 
